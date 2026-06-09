@@ -1,31 +1,34 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock
+
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.api.v1.health import check_database, check_redis
 
 
 async def test_check_database_success() -> None:
-    result = await check_database("sqlite+aiosqlite:///:memory:")
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    result = await check_database(engine)
+    await engine.dispose()
     assert result == "ok"
 
 
-async def test_check_database_failure_bad_url() -> None:
-    result = await check_database("invalid://not-a-database")
+async def test_check_database_failure() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:////nonexistent/path/db.sqlite")
+    result = await check_database(engine)
+    await engine.dispose()
     assert result.startswith("error:")
 
 
 async def test_check_redis_success() -> None:
-    mock_r = AsyncMock()
-    with patch("app.api.v1.health.aioredis.from_url", return_value=mock_r):
-        result = await check_redis("redis://localhost:6379")
+    mock_client: MagicMock = MagicMock()
+    mock_client.ping = AsyncMock(return_value=True)
+    result = await check_redis(mock_client)
     assert result == "ok"
-    mock_r.ping.assert_called_once()
-    mock_r.aclose.assert_called_once()
+    mock_client.ping.assert_called_once()
 
 
-async def test_check_redis_failure_connection_refused() -> None:
-    with patch(
-        "app.api.v1.health.aioredis.from_url",
-        side_effect=ConnectionRefusedError("Connection refused"),
-    ):
-        result = await check_redis("redis://localhost:9999")
+async def test_check_redis_failure() -> None:
+    mock_client: MagicMock = MagicMock()
+    mock_client.ping = AsyncMock(side_effect=ConnectionRefusedError("refused"))
+    result = await check_redis(mock_client)
     assert result.startswith("error:")

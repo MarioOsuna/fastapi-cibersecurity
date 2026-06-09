@@ -25,7 +25,6 @@ dev = [
     "ruff>=0.4.0",
     "mypy>=1.10.0",
     "pre-commit>=3.7.0",
-    "types-redis>=4.6.0",
     "sqlalchemy[mypy]>=2.0.30",
 ]
 
@@ -43,6 +42,7 @@ known-first-party = ["app"]
 python_version = "3.11"
 strict = true
 plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
+warn_unused_ignores = false
 
 [[tool.mypy.overrides]]
 module = "tests.*"
