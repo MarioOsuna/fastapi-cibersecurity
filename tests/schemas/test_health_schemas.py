@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.schemas.health import HealthResponse, ReadinessResponse
 
@@ -8,7 +8,7 @@ def test_health_response_fields() -> None:
         status="ok",
         version="0.1.0",
         environment="development",
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
     assert resp.status == "ok"
     assert resp.version == "0.1.0"
