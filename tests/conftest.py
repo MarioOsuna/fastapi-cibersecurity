@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi import FastAPI
@@ -9,12 +10,21 @@ from sqlalchemy.pool import StaticPool
 import app.models as _models  # noqa: F401 — populates Base.metadata before create_all
 from app.core.config import Settings, get_settings
 from app.core.database import Base
+from app.core.dependencies import get_engine, get_redis_client
 from app.main import create_app
 
 _TEST_SETTINGS = Settings(
     database_url="sqlite+aiosqlite:///./test.db",
     redis_url="redis://localhost:6379",
 )
+
+# Shared SQLite engine for HTTP-layer tests (lifespan doesn't run with ASGITransport).
+_HTTP_TEST_ENGINE = create_async_engine(
+    "sqlite+aiosqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+_HTTP_TEST_REDIS: MagicMock = MagicMock()
 
 # ── HTTP client fixtures ───────────────────────────────────────────────────────
 
@@ -23,6 +33,8 @@ _TEST_SETTINGS = Settings(
 def app() -> FastAPI:
     application = create_app()
     application.dependency_overrides[get_settings] = lambda: _TEST_SETTINGS
+    application.dependency_overrides[get_engine] = lambda: _HTTP_TEST_ENGINE
+    application.dependency_overrides[get_redis_client] = lambda: _HTTP_TEST_REDIS
     return application
 
 
