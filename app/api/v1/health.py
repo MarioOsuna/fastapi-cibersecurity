@@ -28,7 +28,7 @@ async def check_redis(redis_url: str) -> str:
     try:
         r = aioredis.from_url(redis_url)
         await r.ping()
-        await r.aclose()
+        await r.aclose()  # type: ignore[attr-defined]  # aclose = close, stubs lag
         return "ok"
     except Exception as exc:  # noqa: BLE001
         return f"error: {exc}"
