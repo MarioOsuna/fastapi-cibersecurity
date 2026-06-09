@@ -29,7 +29,7 @@ def test_settings_accepts_explicit_values() -> None:
 def test_settings_missing_database_url_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("DATABASE_URL", raising=False)
     with pytest.raises(ValidationError):
-        Settings(_env_file=None)  # type: ignore[call-arg]
+        Settings(_env_file=None)
 
 
 def test_get_settings_is_cached() -> None:
