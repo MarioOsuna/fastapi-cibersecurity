@@ -27,6 +27,20 @@ class EventRepository:
         )
         return list(result.scalars().all())
 
+    async def list_by_source_ip_since(
+        self,
+        source_ip: str,
+        *,
+        since: datetime,
+    ) -> list[SecurityEvent]:
+        result = await self.session.execute(
+            select(SecurityEvent)
+            .where(SecurityEvent.source_ip == source_ip)
+            .where(SecurityEvent.occurred_at >= since)
+            .order_by(SecurityEvent.occurred_at.desc())
+        )
+        return list(result.scalars().all())
+
     async def list_recent(
         self,
         *,
