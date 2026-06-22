@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 import app.models as _models  # noqa: F401 — populates Base.metadata before create_all
 from app.core.config import Settings, get_settings
 from app.core.database import Base
-from app.core.dependencies import get_engine, get_redis_client
+from app.core.dependencies import get_db_session, get_engine, get_redis_client
 from app.main import create_app
 
 _TEST_SETTINGS = Settings(
@@ -26,16 +26,41 @@ _HTTP_TEST_ENGINE = create_async_engine(
 )
 _HTTP_TEST_REDIS: MagicMock = MagicMock()
 
+
+# ── Table setup for HTTP test engine ──────────────────────────────────────────
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def _create_http_tables() -> AsyncGenerator[None, None]:
+    async with _HTTP_TEST_ENGINE.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+
+
 # ── HTTP client fixtures ───────────────────────────────────────────────────────
 
 
 @pytest.fixture
-def app() -> FastAPI:
+async def app() -> AsyncGenerator[FastAPI, None]:
     application = create_app()
     application.dependency_overrides[get_settings] = lambda: _TEST_SETTINGS
     application.dependency_overrides[get_engine] = lambda: _HTTP_TEST_ENGINE
     application.dependency_overrides[get_redis_client] = lambda: _HTTP_TEST_REDIS
-    return application
+
+    connection = await _HTTP_TEST_ENGINE.connect()
+    transaction = await connection.begin()
+    session = AsyncSession(bind=connection, expire_on_commit=False)
+
+    async def _override_db_session() -> AsyncGenerator[AsyncSession, None]:
+        yield session
+
+    application.dependency_overrides[get_db_session] = _override_db_session
+
+    yield application
+
+    await session.close()
+    await transaction.rollback()
+    await connection.close()
 
 
 @pytest.fixture
