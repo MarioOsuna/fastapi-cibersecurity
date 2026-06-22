@@ -4,7 +4,9 @@ from contextlib import asynccontextmanager
 import redis.asyncio as aioredis
 from fastapi import FastAPI
 
+from app.api.v1.events import router as events_router
 from app.api.v1.health import router as health_router
+from app.api.v1.threats import router as threats_router
 from app.core.config import get_settings
 from app.core.database import create_db_engine, create_session_factory
 from app.core.logging import setup_logging
@@ -31,8 +33,8 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:  # pragma: no c
 def create_app() -> FastAPI:
     _app = FastAPI(title="Threat Analysis API", version="0.1.0", lifespan=lifespan)
     _app.include_router(health_router)
-    # Phase 4: register exception handlers here
-    # Phase 5: register middleware here
+    _app.include_router(events_router)
+    _app.include_router(threats_router)
     return _app
 
 
