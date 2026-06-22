@@ -5,7 +5,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.threat_indicator import ThreatIndicator
+from app.models.threat_indicator import IndicatorType, ThreatIndicator
 
 
 class IndicatorRepository:
@@ -26,11 +26,15 @@ class IndicatorRepository:
         )
         return result.scalar_one_or_none()
 
-    async def list_active(self, *, limit: int = 100) -> list[ThreatIndicator]:
-        result = await self.session.execute(
-            select(ThreatIndicator)
-            .where(ThreatIndicator.is_active.is_(True))
-            .order_by(ThreatIndicator.risk_score.desc())
-            .limit(limit)
-        )
+    async def list_active(
+        self,
+        *,
+        indicator_type: IndicatorType | None = None,
+        limit: int = 100,
+    ) -> list[ThreatIndicator]:
+        stmt = select(ThreatIndicator).where(ThreatIndicator.is_active.is_(True))
+        if indicator_type is not None:
+            stmt = stmt.where(ThreatIndicator.indicator_type == indicator_type)
+        stmt = stmt.order_by(ThreatIndicator.risk_score.desc()).limit(limit)
+        result = await self.session.execute(stmt)
         return list(result.scalars().all())
