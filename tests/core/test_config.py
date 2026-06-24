@@ -32,6 +32,26 @@ def test_settings_missing_database_url_raises(monkeypatch: pytest.MonkeyPatch) -
         Settings(_env_file=None)
 
 
+def test_normalizes_postgres_url() -> None:
+    s = Settings(database_url="postgres://user:pass@host:5432/db")
+    assert s.database_url == "postgresql+asyncpg://user:pass@host:5432/db"
+
+
+def test_normalizes_postgresql_url() -> None:
+    s = Settings(database_url="postgresql://user:pass@host:5432/db")
+    assert s.database_url == "postgresql+asyncpg://user:pass@host:5432/db"
+
+
+def test_preserves_asyncpg_url() -> None:
+    s = Settings(database_url="postgresql+asyncpg://user:pass@host:5432/db")
+    assert s.database_url == "postgresql+asyncpg://user:pass@host:5432/db"
+
+
+def test_preserves_sqlite_url() -> None:
+    s = Settings(database_url="sqlite+aiosqlite:///./test.db")
+    assert s.database_url == "sqlite+aiosqlite:///./test.db"
+
+
 def test_get_settings_is_cached() -> None:
     get_settings.cache_clear()
     s1 = get_settings()
