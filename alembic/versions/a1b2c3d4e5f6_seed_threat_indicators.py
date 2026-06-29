@@ -149,10 +149,20 @@ def upgrade() -> None:
                 "INSERT INTO threat_indicators "
                 "(id, indicator_value, indicator_type, source, risk_score, "
                 "is_active, first_seen, last_seen, created_at) "
-                "VALUES (:id, :indicator_value, :indicator_type::indicator_type_enum, "
-                ":source, :risk_score, :is_active, :first_seen::timestamptz, "
-                ":last_seen::timestamptz, :created_at::timestamptz)"
-            ).bindparams(**i)
+                "VALUES (:id, :val, CAST(:itype AS indicator_type_enum), "
+                ":source, :score, :active, CAST(:fseen AS timestamptz), "
+                "CAST(:lseen AS timestamptz), CAST(:cat AS timestamptz))"
+            ).bindparams(
+                id=i["id"],
+                val=i["indicator_value"],
+                itype=i["indicator_type"],
+                source=i["source"],
+                score=i["risk_score"],
+                active=i["is_active"],
+                fseen=i["first_seen"],
+                lseen=i["last_seen"],
+                cat=i["created_at"],
+            )
         )
 
 
