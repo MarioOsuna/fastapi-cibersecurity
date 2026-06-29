@@ -8,8 +8,6 @@ Create Date: 2026-06-29 18:00:00.000000
 
 from collections.abc import Sequence
 
-import sqlalchemy as sa
-
 from alembic import op
 
 revision: str = "a1b2c3d4e5f6"
@@ -144,25 +142,20 @@ INDICATORS = [
 
 def upgrade() -> None:
     for i in INDICATORS:
+        active = "TRUE" if i["is_active"] else "FALSE"
         op.execute(
-            sa.text(
-                "INSERT INTO threat_indicators "
-                "(id, indicator_value, indicator_type, source, risk_score, "
-                "is_active, first_seen, last_seen, created_at) "
-                "VALUES (:id, :val, CAST(:itype AS indicator_type_enum), "
-                ":source, :score, :active, CAST(:fseen AS timestamptz), "
-                "CAST(:lseen AS timestamptz), CAST(:cat AS timestamptz))"
-            ).bindparams(
-                id=i["id"],
-                val=i["indicator_value"],
-                itype=i["indicator_type"],
-                source=i["source"],
-                score=i["risk_score"],
-                active=i["is_active"],
-                fseen=i["first_seen"],
-                lseen=i["last_seen"],
-                cat=i["created_at"],
-            )
+            f"INSERT INTO threat_indicators "
+            f"(id, indicator_value, indicator_type, source, risk_score, "
+            f"is_active, first_seen, last_seen, created_at) VALUES ("
+            f"'{i['id']}'::uuid, "
+            f"'{i['indicator_value']}', "
+            f"'{i['indicator_type']}'::indicator_type_enum, "
+            f"'{i['source']}', "
+            f"{i['risk_score']}, "
+            f"{active}, "
+            f"'{i['first_seen']}'::timestamptz, "
+            f"'{i['last_seen']}'::timestamptz, "
+            f"'{i['created_at']}'::timestamptz)"
         )
 
 
