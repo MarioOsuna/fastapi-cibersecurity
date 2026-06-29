@@ -143,19 +143,17 @@ INDICATORS = [
 
 
 def upgrade() -> None:
-    table = sa.table(
-        "threat_indicators",
-        sa.column("id", sa.Uuid),
-        sa.column("indicator_value", sa.String),
-        sa.column("indicator_type", sa.String),
-        sa.column("source", sa.String),
-        sa.column("risk_score", sa.Float),
-        sa.column("is_active", sa.Boolean),
-        sa.column("first_seen", sa.DateTime),
-        sa.column("last_seen", sa.DateTime),
-        sa.column("created_at", sa.DateTime),
-    )
-    op.bulk_insert(table, INDICATORS)
+    for i in INDICATORS:
+        op.execute(
+            sa.text(
+                "INSERT INTO threat_indicators "
+                "(id, indicator_value, indicator_type, source, risk_score, "
+                "is_active, first_seen, last_seen, created_at) "
+                "VALUES (:id, :indicator_value, :indicator_type::indicator_type_enum, "
+                ":source, :risk_score, :is_active, :first_seen::timestamptz, "
+                ":last_seen::timestamptz, :created_at::timestamptz)"
+            ).bindparams(**i)
+        )
 
 
 def downgrade() -> None:
