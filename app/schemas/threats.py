@@ -8,6 +8,14 @@ from pydantic import BaseModel
 from app.models.threat_indicator import IndicatorType
 
 
+class IndicatorCreate(BaseModel):
+    indicator_value: str
+    indicator_type: IndicatorType
+    source: str
+    risk_score: float = 0.0
+    is_active: bool = True
+
+
 class RiskScoreResponse(BaseModel):
     source_ip: str
     risk_score: float

@@ -2,12 +2,17 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 
 from app.core.dependencies import get_indicator_repo, get_scoring_service
-from app.models.threat_indicator import IndicatorType
+from app.models.threat_indicator import IndicatorType, ThreatIndicator
 from app.repositories.indicator_repository import IndicatorRepository
-from app.schemas.threats import IndicatorListResponse, IndicatorResponse, RiskScoreResponse
+from app.schemas.threats import (
+    IndicatorCreate,
+    IndicatorListResponse,
+    IndicatorResponse,
+    RiskScoreResponse,
+)
 from app.services.scoring import ScoringService
 
 router = APIRouter(prefix="/api/v1/threats", tags=["threats"])
@@ -27,6 +32,27 @@ async def get_risk_score(
         severity_points=result.severity_points,
         ioc_points=result.ioc_points,
     )
+
+
+@router.post("/indicators", response_model=IndicatorResponse, status_code=status.HTTP_201_CREATED)
+async def create_indicator(
+    body: IndicatorCreate,
+    repo: Annotated[IndicatorRepository, Depends(get_indicator_repo)],
+) -> IndicatorResponse:
+    from datetime import UTC, datetime
+
+    now = datetime.now(UTC)
+    indicator = ThreatIndicator(
+        indicator_value=body.indicator_value,
+        indicator_type=body.indicator_type,
+        source=body.source,
+        risk_score=body.risk_score,
+        is_active=body.is_active,
+        first_seen=now,
+        last_seen=now,
+    )
+    created = await repo.create(indicator)
+    return IndicatorResponse.model_validate(created)
 
 
 @router.get("/indicators", response_model=IndicatorListResponse)
